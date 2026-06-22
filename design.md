@@ -2,15 +2,9 @@
 
 ## Overview
 
-A clean, portfolio-quality binary sentiment classifier (positive/negative) trained on IMDB movie reviews.
-The project uses PyTorch with GloVe word embeddings and supports multiple swappable model architectures —
-RNN, GRU, a token-wise MLP, and an MLP with restricted self-attention — all behind a shared interface.
-
-The codebase is structured as a proper Python package: clear module boundaries, no God-objects, and
-extension points that let a future developer add a new architecture, swap the dataset, or change the
-embedding source with minimal friction. The goal is code a hiring manager can read in ten minutes and
-understand completely.
-
+A binary sentiment classifier (positive/negative) trained on IMDB movie reviews.
+The project uses PyTorch with GloVe word embeddings and supports multiple swappable model architectures
+RNN, GRU, a token-wise MLP, and an MLP with restricted self-attention (all behind a shared interface)
 ---
 
 ## Architecture
