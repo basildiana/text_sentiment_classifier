@@ -5,7 +5,6 @@
 A binary sentiment classifier (positive/negative) trained on IMDB movie reviews.
 The project uses PyTorch with GloVe word embeddings and supports multiple swappable model architectures
 RNN, GRU, a token-wise MLP, and an MLP with restricted self-attention (all behind a shared interface)
----
 
 ## Architecture
 
