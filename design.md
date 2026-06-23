@@ -635,58 +635,109 @@ print(f"{label} ({prob:.2%})")
 
 ## Correctness Properties
 
+*A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+
 ### Property 1: Preprocessor output length is always exactly max_len
 
-```python
-assert all(len(preprocessor.process(text)) == preprocessor.max_len
-           for text in sample_texts)
-```
+*For any* string input (empty, very long, whitespace-only, non-ASCII), `TextPreprocessor.process` SHALL return a list of integers whose length is exactly `max_len`, regardless of whether truncation or padding was applied.
 
-### Property 2: GloVe PAD token is always index 0 with a zero vector
+**Validates: Requirements 1.1, 1.4, 1.5**
 
-```python
-vocab, emb = GloVeLoader().load(glove_path)
-assert vocab["<PAD>"] == 0
-assert torch.all(emb[0] == 0)
-```
+### Property 2: Cleaned text contains only lowercase alphabetic characters and whitespace
 
-### Property 3: Model output shape matches batch size
+*For any* input string, `TextPreprocessor.clean` SHALL return a string that contains only the characters `[a-z]` and whitespace — no digits, punctuation, or uppercase letters.
 
-```python
-for batch_ids, _ in train_loader:
-    logits = model(batch_ids)
-    assert logits.shape == (batch_ids.shape[0], 1)
-    break
-```
+**Validates: Requirements 1.2**
 
-### Property 4: All registered model names produce valid instances
+### Property 3: GloVe PAD token is always index 0 with a zero vector
 
-```python
-for name in ModelFactory._registry:
-    m = ModelFactory.create(name, embedding_matrix, config)
-    assert isinstance(m, BaseClassifier)
-```
+*For any* valid GloVe file, after calling `GloVeLoader.load`, `vocab["<PAD>"]` SHALL equal 0 and `embedding_matrix[0]` SHALL be the zero vector of the correct dimension.
 
-### Property 5: Checkpointer only saves when accuracy strictly improves
+**Validates: Requirements 2.2**
 
-```python
-results = [EvalResult(accuracy=0.70, ...), EvalResult(accuracy=0.65, ...)]
-saves   = [checkpointer.maybe_save(i, model, r) for i, r in enumerate(results)]
-assert saves == [True, False]
-```
+### Property 4: GloVe vocabulary size equals embedding matrix row count
 
-### Property 6: Training loss is non-negative for all epochs
+*For any* valid GloVe file, `len(vocab)` SHALL equal `embedding_matrix.shape[0]` — including after skipping malformed lines and reserving index 0 for PAD.
 
-```python
-assert all(loss >= 0 for loss in result.train_losses)
-```
+**Validates: Requirements 2.1, 2.3, 2.4**
 
-### Property 7: Attention weights sum to 1
+### Property 5: Model forward output shape matches batch size for all architectures
 
-```python
-attn_weights = model.attention.last_weights   # exposed for testing
-assert torch.allclose(attn_weights.sum(dim=-1), torch.ones(attn_weights.shape[0]))
-```
+*For any* registered model name and any batch size in `[1, 64]`, `model.forward(x)` where `x` has shape `[batch, seq_len]` SHALL return a `FloatTensor` of shape `[batch, 1]`.
+
+**Validates: Requirements 4.1, 4.5, 4.6, 4.7, 4.8**
+
+### Property 6: All registered model names produce valid BaseClassifier instances
+
+*For any* name in `ModelFactory._registry`, `ModelFactory.create(name, embedding_matrix, config)` SHALL return an object that is an instance of `BaseClassifier`.
+
+**Validates: Requirements 5.1, 5.4**
+
+### Property 7: Unregistered model names always raise ValueError
+
+*For any* string that is not a key in `ModelFactory._registry`, calling `ModelFactory.create` SHALL raise a `ValueError` containing both the invalid name and the list of valid names.
+
+**Validates: Requirements 5.2**
+
+### Property 8: Checkpointer save decision is monotone in accuracy
+
+*For any* sequence of `EvalResult` values, `Checkpointer.maybe_save` SHALL return `True` if and only if the current accuracy strictly exceeds all previously seen accuracy values; otherwise it SHALL return `False` and not overwrite the saved checkpoint.
+
+**Validates: Requirements 7.1, 7.2**
+
+### Property 9: Checkpoint round-trip preserves model outputs
+
+*For any* trained model and any input batch, saving the model via `Checkpointer.maybe_save` and then restoring it via `Checkpointer.load_best` SHALL produce a model whose `forward` output is identical (within floating-point tolerance) to the original model's output on the same batch.
+
+**Validates: Requirements 7.3**
+
+### Property 10: Training loss is non-negative for all epochs
+
+*For any* training run, every value in `TrainingResult.train_losses` SHALL be greater than or equal to 0.
+
+**Validates: Requirements 6.7**
+
+### Property 11: TrainingResult epoch count matches config
+
+*For any* valid `TrainingConfig`, after `Trainer.fit` completes, `len(result.train_losses)` SHALL equal `config.epochs` and `len(result.eval_results)` SHALL equal `ceil(config.epochs / config.eval_every)`.
+
+**Validates: Requirements 6.1, 6.2, 6.6**
+
+### Property 12: best_accuracy equals maximum of recorded eval accuracies
+
+*For any* training run that produces at least one evaluation result, `TrainingResult.best_accuracy` SHALL equal `max(r.accuracy for r in result.eval_results)`.
+
+**Validates: Requirements 6.3**
+
+### Property 13: Attention weights sum to 1
+
+*For any* input batch processed by `AttentionMLPClassifier.forward`, the attention weight vector for each sample in the batch SHALL sum to 1 along the sequence dimension (within floating-point tolerance).
+
+**Validates: Requirements 4.9**
+
+### Property 14: EvalResult accuracy is always in [0, 1]
+
+*For any* confusion matrix counts `(tp, tn, fp, fn)` with non-negative integer values, `EvalResult.accuracy` SHALL be a float in the closed interval `[0, 1]`.
+
+**Validates: Requirements 8.3**
+
+### Property 15: EvalResult precision/recall/f1 are consistent with confusion matrix
+
+*For any* `EvalResult` with non-zero `(tp, fp, fn)` values, `precision`, `recall`, and `f1` SHALL satisfy `f1 == 2 * precision * recall / (precision + recall)`.
+
+**Validates: Requirements 8.2**
+
+### Property 16: Inference pipeline always produces a valid sentiment label
+
+*For any* raw text string, passing it through `TextPreprocessor.process` then `model.forward` then `sigmoid` SHALL produce a probability in `[0, 1]`, and the resulting label SHALL be either `"positive"` or `"negative"`.
+
+**Validates: Requirements 12.1, 12.2, 12.3**
+
+### Property 17: GloVe loading is deterministic
+
+*For any* valid GloVe file loaded twice with the same dimension parameter, both calls to `GloVeLoader.load` SHALL return identical vocabulary dictionaries and embedding matrices.
+
+**Validates: Requirements 11.1**
 
 ---
 
