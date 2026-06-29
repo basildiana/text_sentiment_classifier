@@ -13,20 +13,24 @@ from text_sentiment_classifier.data.preprocessor import TextPreprocessor
 # Column names expected in the CSV file.
 _REVIEW_COL = "review"
 _LABEL_COL = "sentiment"
-_SPLIT_COL = "split"
 
 # Sentiment string → binary label mapping.
 _LABEL_MAP = {"positive": 1, "negative": 0}
+
+# Fraction of data used for training (the rest becomes the test split).
+_TRAIN_RATIO = 0.8
 
 
 class SentimentDataset(Dataset):
     """PyTorch Dataset that loads IMDB reviews from a CSV file.
 
-    The CSV must contain at least three columns:
+    The CSV must contain exactly two columns:
 
-    - ``review``   — raw review text (string)
+    - ``review``    — raw review text (string)
     - ``sentiment`` — ``"positive"`` or ``"negative"``
-    - ``split``    — ``"train"`` or ``"test"``
+
+    The dataset is split into train / test by row index using an 80/20
+    ratio.  No ``split`` column is required.
 
     Each call to ``__getitem__`` runs the full ``TextPreprocessor`` pipeline
     and returns a ``(token_ids, label)`` tuple ready for use in a DataLoader.
@@ -35,6 +39,7 @@ class SentimentDataset(Dataset):
         csv_path:     Path to the IMDB CSV file.
         preprocessor: A fitted :class:`~text_sentiment_classifier.data.preprocessor.TextPreprocessor`.
         split:        Which data split to expose — ``"train"`` or ``"test"``.
+        train_ratio:  Fraction of rows assigned to the train split (default 0.8).
     """
 
     def __init__(
@@ -42,21 +47,27 @@ class SentimentDataset(Dataset):
         csv_path: str,
         preprocessor: TextPreprocessor,
         split: Literal["train", "test"],
+        train_ratio: float = _TRAIN_RATIO,
     ) -> None:
         df = pd.read_csv(csv_path)
 
-        missing = {_REVIEW_COL, _LABEL_COL, _SPLIT_COL} - set(df.columns)
+        missing = {_REVIEW_COL, _LABEL_COL} - set(df.columns)
         if missing:
             raise ValueError(
                 f"CSV file is missing required columns: {missing}.  "
                 f"Found: {list(df.columns)}"
             )
 
-        df = df[df[_SPLIT_COL] == split].reset_index(drop=True)
+        # Deterministic train/test split by index — no shuffling so results
+        # are reproducible without needing a split column in the CSV.
+        cutoff = int(len(df) * train_ratio)
+        df = df.iloc[:cutoff] if split == "train" else df.iloc[cutoff:]
+        df = df.reset_index(drop=True)
 
         if len(df) == 0:
             raise ValueError(
-                f"No rows found for split={split!r} in {csv_path!r}."
+                f"No rows found for split={split!r} in {csv_path!r}.  "
+                f"Check that the file has more than one row."
             )
 
         self._preprocessor = preprocessor
