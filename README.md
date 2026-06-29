@@ -1,16 +1,16 @@
 # Text Sentiment Classifier
+A modular binary sentiment classifier designed to evaluate reviews from the IMDB dataset as either **positive** or **negative**. 
 
 [![Status](https://img.shields.io/badge/status-in__progress-orange.svg)]()
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)]()
 [![PyTorch](https://img.shields.io/badge/pytorch-2.0+-red.svg)]()
 
-A modular, production-grade binary sentiment classifier designed to evaluate movie reviews from the IMDB dataset as either **positive** or **negative**. 
 
-> ⚠️ **Project Status: Work in Progress** > This repository currently contains the comprehensive design documentation, architectural specifications, and core interfaces. Active development of the underlying PyTorch training pipelines and model architectures is currently underway.
-
+> ⚠️ **Project Status: Work in Progress** > This repo contains design documentation, architectural specifications, and core interfaces. 
+Active development of the underlying PyTorch training pipelines and model architectures is currently underway.
 ---
 
-## 🚀 Key Features (In Development)
+## 🚀 Key Features 
 
 * **Swappable Architectures:** Implements a unified interface supporting multiple underlying models behind a strict registry pattern (RNN, GRU, Token-wise MLP, and an MLP utilizing restricted self-attention).
 * **Decoupled Design:** Features a dedicated `ModelFactory` to cleanly isolate training orchestration from specific neural network configurations.
