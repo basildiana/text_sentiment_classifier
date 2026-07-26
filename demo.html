@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sentiment Classifier Demo</title>
+  <style>
+    /* ── Reset & base ──────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f0f13;
+      color: #e8e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 48px 16px 64px;
+    }
+
+    /* ── Card ──────────────────────────────────────────────────────────── */
+    .card {
+      background: #1a1a24;
+      border: 1px solid #2e2e42;
+      border-radius: 16px;
+      padding: 40px 44px;
+      width: 100%;
+      max-width: 680px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    }
+
+    /* ── Header ────────────────────────────────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 8px;
+    }
+
+    .header-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #6c63ff, #a78bfa);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #f0f0ff;
+    }
+
+    .subtitle {
+      font-size: 0.875rem;
+      color: #8888aa;
+      margin-bottom: 28px;
+      padding-left: 58px;
+    }
+
+    /* ── Textarea ──────────────────────────────────────────────────────── */
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #8888aa;
+      margin-bottom: 8px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 140px;
+      background: #0f0f18;
+      border: 1.5px solid #2e2e42;
+      border-radius: 10px;
+      color: #e8e8f0;
+      font-size: 0.97rem;
+      line-height: 1.6;
+      padding: 14px 16px;
+      resize: vertical;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    textarea::placeholder { color: #44445a; }
+
+    textarea:focus { border-color: #6c63ff; }
+
+    /* ── Examples ──────────────────────────────────────────────────────── */
+    .examples {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+      margin-bottom: 24px;
+    }
+
+    .example-chip {
+      background: #22223a;
+      border: 1px solid #2e2e48;
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 0.78rem;
+      color: #9999bb;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      user-select: none;
+    }
+
+    .example-chip:hover {
+      background: #2e2e50;
+      color: #c0c0e8;
+      border-color: #5555aa;
+    }
+
+    /* ── Button ────────────────────────────────────────────────────────── */
+    button {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, #6c63ff, #8b5cf6);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+
+    button:hover  { opacity: 0.9; }
+    button:active { transform: scale(0.98); }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Result card ───────────────────────────────────────────────────── */
+    #result {
+      margin-top: 28px;
+      display: none;
+    }
+
+    .result-inner {
+      border-radius: 12px;
+      padding: 24px 28px;
+      border: 1.5px solid transparent;
+    }
+
+    .result-inner.positive {
+      background: #0d2318;
+      border-color: #1a5c35;
+    }
+
+    .result-inner.negative {
+      background: #21100f;
+      border-color: #6b2020;
+    }
+
+    .result-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    .result-label .emoji { font-size: 1.6rem; }
+
+    .result-label.positive { color: #4ade80; }
+    .result-label.negative { color: #f87171; }
+
+    /* ── Confidence bar ────────────────────────────────────────────────── */
+    .conf-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: #8888aa;
+      margin-bottom: 6px;
+    }
+
+    .bar-track {
+      height: 7px;
+      background: #2a2a3e;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      transition: width 0.5s ease;
+    }
+
+    .bar-fill.positive { background: linear-gradient(90deg, #22c55e, #4ade80); }
+    .bar-fill.negative { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+    /* ── Error ─────────────────────────────────────────────────────────── */
+    .error-box {
+      margin-top: 20px;
+      background: #2a1010;
+      border: 1px solid #6b2020;
+      border-radius: 10px;
+      padding: 14px 18px;
+      color: #f87171;
+      font-size: 0.88rem;
+      display: none;
+    }
+
+    /* ── Spinner ───────────────────────────────────────────────────────── */
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Footer ────────────────────────────────────────────────────────── */
+    .footer {
+      margin-top: 28px;
+      font-size: 0.75rem;
+      color: #44445a;
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .tech-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 10px;
+    }
+
+    .tech-tag {
+      background: #1a1a2e;
+      border: 1px solid #2e2e48;
+      border-radius: 6px;
+      padding: 3px 10px;
+      font-size: 0.72rem;
+      color: #6666aa;
+    }
+
+    /* ── Server status dot ─────────────────────────────────────────────── */
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+      color: #55556a;
+      margin-bottom: 20px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #44445a;
+      flex-shrink: 0;
+    }
+
+    .dot.online  { background: #4ade80; box-shadow: 0 0 6px #4ade80aa; }
+    .dot.offline { background: #f87171; box-shadow: 0 0 6px #f87171aa; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-icon">🎬</div>
+    <h1>Movie Review Sentiment</h1>
+  </div>
+  <p class="subtitle">PyTorch · GloVe Embeddings · GRU / RNN / MLP</p>
+
+  <!-- Server status -->
+  <div class="status-row">
+    <div class="dot" id="dot"></div>
+    <span id="status-text">Checking server…</span>
+  </div>
+
+  <!-- Input -->
+  <label for="review-input">Review text</label>
+  <textarea
+    id="review-input"
+    placeholder="Type or paste a movie review here…"
+    spellcheck="false"
+  ></textarea>
+
+  <!-- Quick examples -->
+  <div class="examples" id="examples"></div>
+
+  <!-- Submit -->
+  <button id="submit-btn" onclick="classify()">Analyse Sentiment</button>
+
+  <!-- Result -->
+  <div id="result">
+    <div class="result-inner" id="result-inner">
+      <div class="result-label" id="result-label"></div>
+      <div class="conf-row">
+        <span>Confidence</span>
+        <span id="conf-pct"></span>
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill" id="bar-fill" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div class="error-box" id="error-box"></div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div>Binary sentiment classifier trained on 50,000 IMDB reviews</div>
+    <div class="tech-tags">
+      <span class="tech-tag">PyTorch</span>
+      <span class="tech-tag">GloVe 100d</span>
+      <span class="tech-tag">GRU</span>
+      <span class="tech-tag">RNN</span>
+      <span class="tech-tag">MLP + Attention</span>
+      <span class="tech-tag">Flask</span>
+    </div>
+  </div>
+
+</div><!-- /card -->
+
+<script>
+  const API = "http://127.0.0.1:5000";
+
+  /* ── Example reviews ──────────────────────────────────────────────────── */
+  const EXAMPLES = [
+    "This movie was absolutely fantastic — great performances all around.",
+    "I walked out after 20 minutes. Worst film I have ever seen.",
+    "A beautifully crafted story with stunning visuals and a powerful ending.",
+    "Terrible script, wooden acting, complete waste of two hours.",
+    "Surprisingly touching. The chemistry between the leads was wonderful.",
+    "The plot made no sense. I kept checking how much time was left.",
+  ];
+
+  /* ── Render example chips ─────────────────────────────────────────────── */
+  const examplesEl = document.getElementById("examples");
+  EXAMPLES.forEach(text => {
+    const chip = document.createElement("button");
+    chip.className = "example-chip";
+    chip.textContent = text.length > 52 ? text.slice(0, 52) + "…" : text;
+    chip.style.cssText = "width:auto;padding:5px 14px;background:#22223a;border:1px solid #2e2e48;border-radius:20px;font-size:.78rem;color:#9999bb;cursor:pointer;font-weight:normal;letter-spacing:0";
+    chip.onclick = () => {
+      document.getElementById("review-input").value = text;
+      hideError();
+      hideResult();
+    };
+    examplesEl.appendChild(chip);
+  });
+
+  /* ── Server health check ──────────────────────────────────────────────── */
+  async function checkServer() {
+    const dot  = document.getElementById("dot");
+    const text = document.getElementById("status-text");
+    try {
+      const res = await fetch(`${API}/health`, { signal: AbortSignal.timeout(2000) });
+      if (res.ok) {
+        dot.className  = "dot online";
+        text.textContent = "Server online — ready to classify";
+        return;
+      }
+    } catch (_) {}
+    dot.className  = "dot offline";
+    text.textContent = "Server offline — run: python app.py --checkpoint checkpoints/gru_best.pt --glove_path glove.6B.100d.txt";
+  }
+
+  checkServer();
+
+  /* ── Classification ───────────────────────────────────────────────────── */
+  async function classify() {
+    const input = document.getElementById("review-input").value.trim();
+    if (!input) {
+      showError("Please enter a review before analysing.");
+      return;
+    }
+
+    const btn = document.getElementById("submit-btn");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Analysing…';
+    hideError();
+    hideResult();
+
+    try {
+      const res = await fetch(`${API}/predict`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ text: input }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Server error ${res.status}`);
+      }
+
+      const data = await res.json();
+      showResult(data);
+
+    } catch (err) {
+      if (err.name === "TypeError" || err.message.includes("fetch")) {
+        showError("Could not reach the server. Make sure app.py is running:\n\npython app.py --checkpoint checkpoints/gru_best.pt --glove_path glove.6B.100d.txt");
+      } else {
+        showError(err.message);
+      }
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Analyse Sentiment";
+    }
+  }
+
+  /* ── UI helpers ───────────────────────────────────────────────────────── */
+  function showResult({ label, confidence }) {
+    const isPositive = label === "positive";
+    const pct = Math.round(confidence * 100);
+
+    const inner = document.getElementById("result-inner");
+    const lbl   = document.getElementById("result-label");
+    const bar   = document.getElementById("bar-fill");
+    const conf  = document.getElementById("conf-pct");
+
+    inner.className = `result-inner ${label}`;
+    lbl.className   = `result-label ${label}`;
+    lbl.innerHTML   = `<span class="emoji">${isPositive ? "😊" : "😞"}</span>${isPositive ? "Positive" : "Negative"} sentiment`;
+    bar.className   = `bar-fill ${label}`;
+    bar.style.width = `${pct}%`;
+    conf.textContent = `${pct}%`;
+
+    const resultEl = document.getElementById("result");
+    resultEl.style.display = "block";
+    // Trigger CSS transition
+    requestAnimationFrame(() => { bar.style.width = `${pct}%`; });
+  }
+
+  function hideResult() {
+    document.getElementById("result").style.display = "none";
+  }
+
+  function showError(msg) {
+    const el = document.getElementById("error-box");
+    el.textContent = msg;
+    el.style.display = "block";
+  }
+
+  function hideError() {
+    document.getElementById("error-box").style.display = "none";
+  }
+
+  /* ── Allow Enter (Ctrl+Enter) to submit ───────────────────────────────── */
+  document.getElementById("review-input").addEventListener("keydown", e => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) classify();
+  });
+</script>
+
+</body>
+</html>

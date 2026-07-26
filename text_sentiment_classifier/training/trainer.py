@@ -74,10 +74,18 @@ class Trainer:
         best_accuracy: float = 0.0
         best_epoch: int = 0
 
+        total_batches = len(train_loader)
+        print(f"\n{'='*60}")
+        print(f"  Starting training: {self.config.epochs} epochs, "
+              f"{total_batches} batches/epoch")
+        print(f"{'='*60}\n")
+
         for epoch in range(self.config.epochs):
             model.train()
             epoch_loss = 0.0
             num_batches = 0
+
+            print(f"Epoch {epoch + 1}/{self.config.epochs} — training...", flush=True)
 
             for batch_ids, batch_labels in train_loader:
                 batch_ids = batch_ids.to(self.device)
@@ -93,6 +101,12 @@ class Trainer:
                     epoch_loss += loss.item()
                     num_batches += 1
 
+                    # Print a progress dot every 10% of batches
+                    if num_batches % max(1, total_batches // 10) == 0:
+                        pct = int(num_batches / total_batches * 100)
+                        print(f"  [{pct:3d}%] batch {num_batches}/{total_batches} "
+                              f"— loss: {epoch_loss / num_batches:.4f}", flush=True)
+
                 except torch.cuda.OutOfMemoryError:
                     logger.error(
                         "CUDA out-of-memory error at epoch %d.  "
@@ -104,22 +118,34 @@ class Trainer:
 
             mean_loss = epoch_loss / max(num_batches, 1)
             train_losses.append(mean_loss)
-            logger.info("Epoch %d/%d — train loss: %.4f", epoch + 1, self.config.epochs, mean_loss)
 
             if epoch % self.config.eval_every == 0:
+                print(f"  Evaluating on test set...", flush=True)
                 result = self.evaluate(model, test_loader)
                 eval_results.append(result)
-                checkpointer.maybe_save(epoch, model, result)
-                logger.info(
-                    "Epoch %d/%d — eval accuracy: %.4f  loss: %.4f",
-                    epoch + 1,
-                    self.config.epochs,
-                    result.accuracy,
-                    result.loss,
-                )
+                saved = checkpointer.maybe_save(epoch, model, result)
+                checkpoint_note = " ✓ checkpoint saved" if saved else ""
+
+                print(f"\n  ┌─ Epoch {epoch + 1}/{self.config.epochs} complete ─────────────────")
+                print(f"  │  Train loss : {mean_loss:.4f}")
+                print(f"  │  Test loss  : {result.loss:.4f}")
+                print(f"  │  Accuracy   : {result.accuracy * 100:.2f}%")
+                print(f"  │  Precision  : {result.precision * 100:.2f}%")
+                print(f"  │  Recall     : {result.recall * 100:.2f}%")
+                print(f"  │  F1 score   : {result.f1 * 100:.2f}%{checkpoint_note}")
+                print(f"  └───────────────────────────────────────────────\n", flush=True)
+
                 if result.accuracy > best_accuracy:
                     best_accuracy = result.accuracy
                     best_epoch = epoch
+            else:
+                print(f"  Epoch {epoch + 1} done — train loss: {mean_loss:.4f}\n", flush=True)
+
+        print(f"\n{'='*60}")
+        print(f"  Training complete!")
+        print(f"  Best accuracy : {best_accuracy * 100:.2f}%  (epoch {best_epoch + 1})")
+        print(f"  Checkpoint    : {self.config.checkpoint_dir}{self.config.model_name}_best.pt")
+        print(f"{'='*60}\n")
 
         return TrainingResult(
             train_losses=train_losses,
