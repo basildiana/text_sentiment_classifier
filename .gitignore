@@ -1,13 +1,19 @@
-Editor configurations
+# Kiro IDE files
 .kiro/
 
-# Python caching and environments
+# Python caching
 __pycache__/
 *.pyc
+*.pyo
 .venv/
 env/
+.pytest_cache/
+.hypothesis/
 
-# Data and large files (don't upload massive datasets)
+# Large data files — download separately (see README)
 *.csv
-*.txt
-checkpoints/
+glove*.txt
+
+# Checkpoints are committed so recruiters can run the demo without retraining.
+# If they grow too large, consider Git LFS: https://git-lfs.github.com
+# checkpoints/   ← intentionally NOT ignored
