@@ -3,472 +3,580 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sentiment Classifier Demo</title>
+  <title>Sentiment Classifier — Model Comparison</title>
   <style>
-    /* ── Reset & base ──────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0d14;
+      --surface:   #16161f;
+      --surface2:  #1e1e2e;
+      --border:    #2a2a3e;
+      --purple:    #7c6df0;
+      --purple2:   #a78bfa;
+      --green:     #4ade80;
+      --green-bg:  #0d2318;
+      --green-bd:  #1a5c35;
+      --red:       #f87171;
+      --red-bg:    #21100f;
+      --red-bd:    #6b2020;
+      --muted:     #6666aa;
+      --text:      #e8e8f0;
+      --text2:     #9999bb;
+    }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #0f0f13;
-      color: #e8e8f0;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      padding: 48px 16px 64px;
+      padding: 40px 16px 80px;
     }
 
-    /* ── Card ──────────────────────────────────────────────────────────── */
-    .card {
-      background: #1a1a24;
-      border: 1px solid #2e2e42;
-      border-radius: 16px;
-      padding: 40px 44px;
-      width: 100%;
-      max-width: 680px;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    /* ── Page layout ──────────────────────────────────────────────── */
+    .page { max-width: 900px; margin: 0 auto; }
+
+    /* ── Header ───────────────────────────────────────────────────── */
+    .hero {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+    .hero-icon {
+      font-size: 2.6rem;
+      margin-bottom: 10px;
+    }
+    .hero h1 {
+      font-size: 1.9rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--purple), var(--purple2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 6px;
+    }
+    .hero p {
+      font-size: 0.9rem;
+      color: var(--muted);
     }
 
-    /* ── Header ────────────────────────────────────────────────────────── */
-    .header {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      margin-bottom: 8px;
-    }
-
-    .header-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #6c63ff, #a78bfa);
+    /* ── Status bar ───────────────────────────────────────────────── */
+    .status-bar {
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 22px;
-      flex-shrink: 0;
-    }
-
-    h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #f0f0ff;
-    }
-
-    .subtitle {
-      font-size: 0.875rem;
-      color: #8888aa;
+      gap: 24px;
+      flex-wrap: wrap;
       margin-bottom: 28px;
-      padding-left: 58px;
+    }
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.78rem;
+      color: var(--text2);
+    }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #44445a;
+      flex-shrink: 0;
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+    .dot.online  { background: var(--green); box-shadow: 0 0 6px #4ade80aa; }
+    .dot.offline { background: var(--red);   box-shadow: 0 0 6px #f87171aa; }
+    .dot.loading { background: #facc15;      box-shadow: 0 0 6px #facc15aa; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    .model-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 0.73rem;
+      color: var(--muted);
+    }
+    .model-pill .mdot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #44445a;
+    }
+    .model-pill.ready .mdot  { background: var(--green); }
+    .model-pill.missing .mdot{ background: #44445a; }
+
+    /* ── Input card ───────────────────────────────────────────────── */
+    .input-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
     }
 
-    /* ── Textarea ──────────────────────────────────────────────────────── */
     label {
       display: block;
-      font-size: 0.8rem;
-      font-weight: 600;
-      letter-spacing: 0.06em;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: .07em;
       text-transform: uppercase;
-      color: #8888aa;
+      color: var(--muted);
       margin-bottom: 8px;
     }
 
     textarea {
       width: 100%;
-      min-height: 140px;
-      background: #0f0f18;
-      border: 1.5px solid #2e2e42;
+      min-height: 110px;
+      background: #0a0a12;
+      border: 1.5px solid var(--border);
       border-radius: 10px;
-      color: #e8e8f0;
-      font-size: 0.97rem;
+      color: var(--text);
+      font-size: 0.95rem;
       line-height: 1.6;
-      padding: 14px 16px;
+      padding: 12px 14px;
       resize: vertical;
-      transition: border-color 0.2s;
       outline: none;
+      transition: border-color .2s;
     }
+    textarea::placeholder { color: #333350; }
+    textarea:focus        { border-color: var(--purple); }
 
-    textarea::placeholder { color: #44445a; }
-
-    textarea:focus { border-color: #6c63ff; }
-
-    /* ── Examples ──────────────────────────────────────────────────────── */
+    /* ── Examples ─────────────────────────────────────────────────── */
     .examples {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 12px;
-      margin-bottom: 24px;
+      gap: 7px;
+      margin-top: 10px;
+      margin-bottom: 20px;
     }
-
-    .example-chip {
-      background: #22223a;
-      border: 1px solid #2e2e48;
+    .chip {
+      background: var(--surface2);
+      border: 1px solid var(--border);
       border-radius: 20px;
-      padding: 5px 14px;
-      font-size: 0.78rem;
-      color: #9999bb;
+      padding: 4px 13px;
+      font-size: 0.76rem;
+      color: var(--text2);
       cursor: pointer;
-      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      transition: background .15s, color .15s;
       user-select: none;
     }
+    .chip:hover { background: #2a2a44; color: var(--text); }
 
-    .example-chip:hover {
-      background: #2e2e50;
-      color: #c0c0e8;
-      border-color: #5555aa;
-    }
-
-    /* ── Button ────────────────────────────────────────────────────────── */
-    button {
+    /* ── Button ───────────────────────────────────────────────────── */
+    .btn {
       width: 100%;
       padding: 13px;
-      background: linear-gradient(135deg, #6c63ff, #8b5cf6);
+      background: linear-gradient(135deg, var(--purple), #8b5cf6);
       border: none;
       border-radius: 10px;
       color: #fff;
       font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      letter-spacing: 0.02em;
-      transition: opacity 0.2s, transform 0.1s;
-    }
-
-    button:hover  { opacity: 0.9; }
-    button:active { transform: scale(0.98); }
-    button:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    /* ── Result card ───────────────────────────────────────────────────── */
-    #result {
-      margin-top: 28px;
-      display: none;
-    }
-
-    .result-inner {
-      border-radius: 12px;
-      padding: 24px 28px;
-      border: 1.5px solid transparent;
-    }
-
-    .result-inner.positive {
-      background: #0d2318;
-      border-color: #1a5c35;
-    }
-
-    .result-inner.negative {
-      background: #21100f;
-      border-color: #6b2020;
-    }
-
-    .result-label {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 1.5rem;
       font-weight: 700;
+      cursor: pointer;
+      letter-spacing: .02em;
+      transition: opacity .2s, transform .1s;
+    }
+    .btn:hover   { opacity: .9; }
+    .btn:active  { transform: scale(.98); }
+    .btn:disabled{ opacity: .35; cursor: not-allowed; }
+
+    /* ── Spinner ──────────────────────────────────────────────────── */
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      vertical-align: middle;
+      margin-right: 7px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Results grid ─────────────────────────────────────────────── */
+    #results-section { display: none; }
+
+    .results-header {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      color: var(--muted);
       margin-bottom: 14px;
+      text-align: center;
     }
 
-    .result-label .emoji { font-size: 1.6rem; }
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+    }
 
-    .result-label.positive { color: #4ade80; }
-    .result-label.negative { color: #f87171; }
+    /* ── Model result card ────────────────────────────────────────── */
+    .model-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 20px 18px;
+      transition: border-color .3s, transform .2s;
+    }
+    .model-card.positive { border-color: var(--green-bd); background: var(--green-bg); }
+    .model-card.negative { border-color: var(--red-bd);   background: var(--red-bg);   }
+    .model-card.loading  { opacity: .5; }
 
-    /* ── Confidence bar ────────────────────────────────────────────────── */
-    .conf-row {
+    .model-card-name {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+    .model-card-desc {
+      font-size: 0.72rem;
+      color: #55556a;
+      margin-bottom: 14px;
+      line-height: 1.4;
+    }
+
+    .verdict {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      font-size: 0.8rem;
-      color: #8888aa;
-      margin-bottom: 6px;
+      gap: 7px;
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: 12px;
     }
+    .verdict.positive { color: var(--green); }
+    .verdict.negative { color: var(--red);   }
 
+    /* ── Bar ──────────────────────────────────────────────────────── */
+    .bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.73rem;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
     .bar-track {
-      height: 7px;
-      background: #2a2a3e;
+      height: 6px;
+      background: #1e1e30;
       border-radius: 99px;
       overflow: hidden;
     }
-
     .bar-fill {
       height: 100%;
       border-radius: 99px;
-      transition: width 0.5s ease;
+      width: 0%;
+      transition: width .6s ease;
     }
-
     .bar-fill.positive { background: linear-gradient(90deg, #22c55e, #4ade80); }
     .bar-fill.negative { background: linear-gradient(90deg, #ef4444, #f87171); }
 
-    /* ── Error ─────────────────────────────────────────────────────────── */
-    .error-box {
-      margin-top: 20px;
-      background: #2a1010;
-      border: 1px solid #6b2020;
-      border-radius: 10px;
-      padding: 14px 18px;
-      color: #f87171;
-      font-size: 0.88rem;
+    .latency {
+      margin-top: 10px;
+      font-size: 0.68rem;
+      color: #44445a;
+      text-align: right;
+    }
+
+    /* ── Agreement banner ─────────────────────────────────────────── */
+    #agreement {
+      margin-top: 16px;
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--muted);
       display: none;
     }
 
-    /* ── Spinner ───────────────────────────────────────────────────────── */
-    .spinner {
-      display: inline-block;
-      width: 18px;
-      height: 18px;
-      border: 2px solid rgba(255,255,255,0.3);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      vertical-align: middle;
-      margin-right: 8px;
+    /* ── Error ────────────────────────────────────────────────────── */
+    .error-box {
+      margin-top: 16px;
+      background: #2a1010;
+      border: 1px solid var(--red-bd);
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: var(--red);
+      font-size: 0.85rem;
+      white-space: pre-wrap;
+      display: none;
     }
 
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── Footer ────────────────────────────────────────────────────────── */
+    /* ── Footer ───────────────────────────────────────────────────── */
     .footer {
-      margin-top: 28px;
-      font-size: 0.75rem;
-      color: #44445a;
+      margin-top: 40px;
       text-align: center;
-      line-height: 1.6;
+      font-size: 0.73rem;
+      color: #33334a;
+      line-height: 1.7;
     }
-
-    .tech-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: center;
-      margin-top: 10px;
-    }
-
-    .tech-tag {
-      background: #1a1a2e;
-      border: 1px solid #2e2e48;
+    .tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; margin-top: 8px; }
+    .tag {
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: 6px;
-      padding: 3px 10px;
-      font-size: 0.72rem;
-      color: #6666aa;
+      padding: 2px 9px;
+      color: #44445a;
+      font-size: 0.7rem;
     }
-
-    /* ── Server status dot ─────────────────────────────────────────────── */
-    .status-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.78rem;
-      color: #55556a;
-      margin-bottom: 20px;
-    }
-
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #44445a;
-      flex-shrink: 0;
-    }
-
-    .dot.online  { background: #4ade80; box-shadow: 0 0 6px #4ade80aa; }
-    .dot.offline { background: #f87171; box-shadow: 0 0 6px #f87171aa; }
   </style>
 </head>
 <body>
+<div class="page">
 
-<div class="card">
-
-  <!-- Header -->
-  <div class="header">
-    <div class="header-icon">🎬</div>
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-icon">🎬</div>
     <h1>Movie Review Sentiment</h1>
+    <p>Submit a review and compare how four different neural architectures classify it</p>
   </div>
-  <p class="subtitle">PyTorch · GloVe Embeddings · GRU / RNN / MLP</p>
 
-  <!-- Server status -->
-  <div class="status-row">
-    <div class="dot" id="dot"></div>
-    <span id="status-text">Checking server…</span>
+  <!-- Status bar -->
+  <div class="status-bar">
+    <div class="status-item">
+      <div class="dot" id="server-dot"></div>
+      <span id="server-text">Connecting…</span>
+    </div>
+    <div id="model-pills" style="display:flex;gap:7px;flex-wrap:wrap;justify-content:center"></div>
   </div>
 
   <!-- Input -->
-  <label for="review-input">Review text</label>
-  <textarea
-    id="review-input"
-    placeholder="Type or paste a movie review here…"
-    spellcheck="false"
-  ></textarea>
+  <div class="input-card">
+    <label for="review-input">Your review</label>
+    <textarea id="review-input"
+      placeholder="Type or paste a movie review here… (Ctrl+Enter to submit)"
+      spellcheck="false"></textarea>
 
-  <!-- Quick examples -->
-  <div class="examples" id="examples"></div>
+    <div class="examples" id="examples"></div>
 
-  <!-- Submit -->
-  <button id="submit-btn" onclick="classify()">Analyse Sentiment</button>
+    <button class="btn" id="submit-btn" onclick="classify()">
+      Compare All Models
+    </button>
 
-  <!-- Result -->
-  <div id="result">
-    <div class="result-inner" id="result-inner">
-      <div class="result-label" id="result-label"></div>
-      <div class="conf-row">
-        <span>Confidence</span>
-        <span id="conf-pct"></span>
-      </div>
-      <div class="bar-track">
-        <div class="bar-fill" id="bar-fill" style="width:0%"></div>
-      </div>
-    </div>
+    <div class="error-box" id="error-box"></div>
   </div>
 
-  <!-- Error -->
-  <div class="error-box" id="error-box"></div>
+  <!-- Results -->
+  <div id="results-section">
+    <div class="results-header">Model comparison results</div>
+    <div class="results-grid" id="results-grid"></div>
+    <div id="agreement"></div>
+  </div>
 
   <!-- Footer -->
   <div class="footer">
-    <div>Binary sentiment classifier trained on 50,000 IMDB reviews</div>
-    <div class="tech-tags">
-      <span class="tech-tag">PyTorch</span>
-      <span class="tech-tag">GloVe 100d</span>
-      <span class="tech-tag">GRU</span>
-      <span class="tech-tag">RNN</span>
-      <span class="tech-tag">MLP + Attention</span>
-      <span class="tech-tag">Flask</span>
+    Binary sentiment classifier trained on 50,000 IMDB reviews · 86%+ accuracy
+    <div class="tags">
+      <span class="tag">PyTorch</span>
+      <span class="tag">GloVe 100d</span>
+      <span class="tag">GRU</span>
+      <span class="tag">RNN</span>
+      <span class="tag">MLP</span>
+      <span class="tag">MLP + Attention</span>
+      <span class="tag">Flask</span>
     </div>
   </div>
 
-</div><!-- /card -->
+</div><!-- /page -->
 
 <script>
-  const API = "http://127.0.0.1:5000";
+const API = "http://127.0.0.1:5000";
 
-  /* ── Example reviews ──────────────────────────────────────────────────── */
-  const EXAMPLES = [
-    "This movie was absolutely fantastic — great performances all around.",
-    "I walked out after 20 minutes. Worst film I have ever seen.",
-    "A beautifully crafted story with stunning visuals and a powerful ending.",
-    "Terrible script, wooden acting, complete waste of two hours.",
-    "Surprisingly touching. The chemistry between the leads was wonderful.",
-    "The plot made no sense. I kept checking how much time was left.",
-  ];
+const MODEL_META = {
+  rnn:          { name: "RNN",             desc: "Vanilla Recurrent Neural Network" },
+  gru:          { name: "GRU",             desc: "Gated Recurrent Unit" },
+  mlp:          { name: "MLP",             desc: "Token-wise Multi-Layer Perceptron" },
+  attention_mlp:{ name: "MLP + Attention", desc: "MLP with Restricted Self-Attention" },
+};
 
-  /* ── Render example chips ─────────────────────────────────────────────── */
-  const examplesEl = document.getElementById("examples");
-  EXAMPLES.forEach(text => {
-    const chip = document.createElement("button");
-    chip.className = "example-chip";
-    chip.textContent = text.length > 52 ? text.slice(0, 52) + "…" : text;
-    chip.style.cssText = "width:auto;padding:5px 14px;background:#22223a;border:1px solid #2e2e48;border-radius:20px;font-size:.78rem;color:#9999bb;cursor:pointer;font-weight:normal;letter-spacing:0";
-    chip.onclick = () => {
-      document.getElementById("review-input").value = text;
-      hideError();
-      hideResult();
-    };
-    examplesEl.appendChild(chip);
-  });
+const EXAMPLES = [
+  "This movie was absolutely fantastic — great performances all around.",
+  "I walked out after 20 minutes. Worst film I have ever seen.",
+  "A beautifully crafted story with stunning visuals and a powerful ending.",
+  "Terrible script, wooden acting, complete waste of two hours.",
+  "Surprisingly touching. The chemistry between the leads was wonderful.",
+  "The plot made no sense. I kept checking how much time was left.",
+];
 
-  /* ── Server health check ──────────────────────────────────────────────── */
-  async function checkServer() {
-    const dot  = document.getElementById("dot");
-    const text = document.getElementById("status-text");
-    try {
-      const res = await fetch(`${API}/health`, { signal: AbortSignal.timeout(2000) });
-      if (res.ok) {
-        dot.className  = "dot online";
-        text.textContent = "Server online — ready to classify";
-        return;
-      }
-    } catch (_) {}
-    dot.className  = "dot offline";
-    text.textContent = "Server offline — run: python app.py --checkpoint checkpoints/gru_best.pt --glove_path glove.6B.100d.txt";
-  }
-
-  checkServer();
-
-  /* ── Classification ───────────────────────────────────────────────────── */
-  async function classify() {
-    const input = document.getElementById("review-input").value.trim();
-    if (!input) {
-      showError("Please enter a review before analysing.");
-      return;
-    }
-
-    const btn = document.getElementById("submit-btn");
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>Analysing…';
+// ── Example chips ──────────────────────────────────────────────────────────
+const examplesEl = document.getElementById("examples");
+EXAMPLES.forEach(text => {
+  const c = document.createElement("span");
+  c.className = "chip";
+  c.textContent = text.length > 55 ? text.slice(0, 55) + "…" : text;
+  c.onclick = () => {
+    document.getElementById("review-input").value = text;
     hideError();
-    hideResult();
+    document.getElementById("results-section").style.display = "none";
+  };
+  examplesEl.appendChild(c);
+});
 
-    try {
-      const res = await fetch(`${API}/predict`, {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ text: input }),
-      });
+// ── Server health + model pills ────────────────────────────────────────────
+let loadedModels = [];
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `Server error ${res.status}`);
-      }
+async function checkServer() {
+  const dot  = document.getElementById("server-dot");
+  const text = document.getElementById("server-text");
+  const pillsEl = document.getElementById("model-pills");
 
-      const data = await res.json();
-      showResult(data);
+  try {
+    const res = await fetch(`${API}/health`, { signal: AbortSignal.timeout(3000) });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    loadedModels = data.loaded_models || [];
 
-    } catch (err) {
-      if (err.name === "TypeError" || err.message.includes("fetch")) {
-        showError("Could not reach the server. Make sure app.py is running:\n\npython app.py --checkpoint checkpoints/gru_best.pt --glove_path glove.6B.100d.txt");
-      } else {
-        showError(err.message);
-      }
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "Analyse Sentiment";
-    }
+    dot.className  = "dot online";
+    text.textContent = `Server online · ${loadedModels.length} model${loadedModels.length !== 1 ? "s" : ""} loaded`;
+
+    // Render a pill for each known architecture
+    pillsEl.innerHTML = "";
+    Object.entries(MODEL_META).forEach(([key, meta]) => {
+      const ready = loadedModels.includes(key);
+      const pill = document.createElement("span");
+      pill.className = `model-pill ${ready ? "ready" : "missing"}`;
+      pill.innerHTML = `<span class="mdot"></span>${meta.name}`;
+      pill.title = ready ? "Loaded and ready" : "Not trained yet — run train.py with --model_name " + key;
+      pillsEl.appendChild(pill);
+    });
+
+  } catch (_) {
+    dot.className  = "dot offline";
+    text.textContent = "Server offline — run: python app.py --glove_path glove.6B.100d.txt";
+    pillsEl.innerHTML = "";
   }
+}
 
-  /* ── UI helpers ───────────────────────────────────────────────────────── */
-  function showResult({ label, confidence }) {
-    const isPositive = label === "positive";
-    const pct = Math.round(confidence * 100);
+checkServer();
 
-    const inner = document.getElementById("result-inner");
-    const lbl   = document.getElementById("result-label");
-    const bar   = document.getElementById("bar-fill");
-    const conf  = document.getElementById("conf-pct");
-
-    inner.className = `result-inner ${label}`;
-    lbl.className   = `result-label ${label}`;
-    lbl.innerHTML   = `<span class="emoji">${isPositive ? "😊" : "😞"}</span>${isPositive ? "Positive" : "Negative"} sentiment`;
-    bar.className   = `bar-fill ${label}`;
-    bar.style.width = `${pct}%`;
-    conf.textContent = `${pct}%`;
-
-    const resultEl = document.getElementById("result");
-    resultEl.style.display = "block";
-    // Trigger CSS transition
-    requestAnimationFrame(() => { bar.style.width = `${pct}%`; });
-  }
-
-  function hideResult() {
-    document.getElementById("result").style.display = "none";
-  }
-
-  function showError(msg) {
-    const el = document.getElementById("error-box");
-    el.textContent = msg;
-    el.style.display = "block";
-  }
-
-  function hideError() {
-    document.getElementById("error-box").style.display = "none";
-  }
-
-  /* ── Allow Enter (Ctrl+Enter) to submit ───────────────────────────────── */
-  document.getElementById("review-input").addEventListener("keydown", e => {
-    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) classify();
+// ── Build empty result cards (skeleton) ────────────────────────────────────
+function buildSkeletonCards() {
+  const grid = document.getElementById("results-grid");
+  grid.innerHTML = "";
+  loadedModels.forEach(name => {
+    const meta = MODEL_META[name] || { name, desc: "" };
+    const card = document.createElement("div");
+    card.className = "model-card loading";
+    card.id = `card-${name}`;
+    card.innerHTML = `
+      <div class="model-card-name">${meta.name}</div>
+      <div class="model-card-desc">${meta.desc}</div>
+      <div class="verdict">
+        <span class="spinner"></span> Analysing…
+      </div>
+      <div class="bar-label"><span>Confidence</span><span>—</span></div>
+      <div class="bar-track"><div class="bar-fill" id="bar-${name}" style="width:0%"></div></div>
+    `;
+    grid.appendChild(card);
   });
-</script>
+  document.getElementById("results-section").style.display = "block";
+  document.getElementById("agreement").style.display = "none";
+}
 
+// ── Fill a single card with real results ───────────────────────────────────
+function fillCard(result) {
+  const { model_name, display_name, description, label, confidence, latency_ms } = result;
+  const card = document.getElementById(`card-${model_name}`);
+  if (!card) return;
+
+  const pct = Math.round(confidence * 100);
+  const emoji = label === "positive" ? "😊" : "😞";
+
+  card.className = `model-card ${label}`;
+  card.innerHTML = `
+    <div class="model-card-name">${display_name}</div>
+    <div class="model-card-desc">${description}</div>
+    <div class="verdict ${label}">${emoji} ${label.charAt(0).toUpperCase() + label.slice(1)}</div>
+    <div class="bar-label"><span>Confidence</span><span>${pct}%</span></div>
+    <div class="bar-track"><div class="bar-fill ${label}" id="bar-${model_name}" style="width:0%"></div></div>
+    <div class="latency">${latency_ms} ms</div>
+  `;
+
+  // Animate bar after paint
+  requestAnimationFrame(() => {
+    const bar = document.getElementById(`bar-${model_name}`);
+    if (bar) bar.style.width = `${pct}%`;
+  });
+}
+
+// ── Show agreement summary ─────────────────────────────────────────────────
+function showAgreement(results) {
+  const positives = results.filter(r => r.label === "positive").length;
+  const total     = results.length;
+  const el        = document.getElementById("agreement");
+
+  if (total === 0) { el.style.display = "none"; return; }
+
+  if (positives === total) {
+    el.innerHTML = `✅ All ${total} models agree: <strong style="color:var(--green)">Positive</strong>`;
+  } else if (positives === 0) {
+    el.innerHTML = `✅ All ${total} models agree: <strong style="color:var(--red)">Negative</strong>`;
+  } else {
+    el.innerHTML = `⚖️ Models disagree — ${positives}/${total} say <strong style="color:var(--green)">Positive</strong>, ${total - positives}/${total} say <strong style="color:var(--red)">Negative</strong>`;
+  }
+  el.style.display = "block";
+}
+
+// ── Main classify ──────────────────────────────────────────────────────────
+async function classify() {
+  const input = document.getElementById("review-input").value.trim();
+  if (!input) { showError("Please enter a review before submitting."); return; }
+
+  if (loadedModels.length === 0) {
+    showError("No models are loaded. Make sure the server is running:\n\npython app.py --glove_path glove.6B.100d.txt");
+    return;
+  }
+
+  const btn = document.getElementById("submit-btn");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Analysing…';
+  hideError();
+  buildSkeletonCards();
+
+  try {
+    const res = await fetch(`${API}/predict_all`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ text: input }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Server error ${res.status}`);
+    }
+
+    const data = await res.json();
+    (data.results || []).forEach(fillCard);
+    showAgreement(data.results || []);
+
+  } catch (err) {
+    document.getElementById("results-section").style.display = "none";
+    if (err.name === "TypeError" || err.message.includes("fetch")) {
+      showError("Could not reach the server.\n\nMake sure app.py is running:\npython app.py --glove_path glove.6B.100d.txt");
+    } else {
+      showError(err.message);
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Compare All Models";
+  }
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function showError(msg) {
+  const el = document.getElementById("error-box");
+  el.textContent = msg;
+  el.style.display = "block";
+}
+function hideError() {
+  document.getElementById("error-box").style.display = "none";
+}
+
+// Ctrl+Enter shortcut
+document.getElementById("review-input").addEventListener("keydown", e => {
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) classify();
+});
+</script>
 </body>
 </html>
