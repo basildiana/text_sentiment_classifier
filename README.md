@@ -107,6 +107,22 @@ text_sentiment_classifier/
 ```
 
 ---
+```mermaid
+graph TD
+    A[CLI / train.py entrypoint] --> B[Trainer]
+    B --> C[SentimentDataset]
+    B --> D[ModelFactory]
+    B --> E[Checkpointer]
+    C --> F[TextPreprocessor]
+    C --> G[GloVeLoader]
+    D --> H[RNNClassifier]
+    D --> I[GRUClassifier]
+    D --> J[MLPClassifier]
+    D --> K[AttentionMLPClassifier]
+    H & I & J & K --> L[BaseClassifier]
+    L --> M[BilinearLayer]
+```
+---
 
 ## 🔁 Retrain from Scratch (optional)
 
