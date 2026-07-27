@@ -10,12 +10,9 @@ Supports 4 neural architectures: RNN, GRU, MLP, and MLP with restricted self-att
 The trained model weights are included in this repo (`checkpoints/`), so you can run the interactive demo **without retraining**.  
 You only need to download one external file: the GloVe word embeddings.
 
-### Step 1 — Download GloVe embeddings
-
+### Step 1: Download GloVe embeddings
 GloVe vectors are too large for GitHub (~350 MB). Download them from Stanford:
-
 👉 **https://nlp.stanford.edu/data/glove.6B.zip**
-
 Unzip and place `glove.6B.100d.txt` in the project root:
 ```
 text_sentiment_classifier/
@@ -26,13 +23,13 @@ text_sentiment_classifier/
 └── ...
 ```
 
-### Step 2 — Install dependencies
+### Step 2: Install dependencies
 
 ```bash
 python -m pip install -r requirements.txt
 ```
 
-### Step 3 — Start the demo server
+### Step 3: Start the demo server
 
 ```bash
 python app.py --glove_path glove.6B.100d.txt
@@ -48,7 +45,7 @@ Ready with models: rnn, gru, mlp, attention_mlp
 * Running on http://127.0.0.1:5000/
 ```
 
-### Step 4 — Open the demo
+### Step 4: Open the demo
 
 **Double-click `demo.html`** in your file explorer (or open it in any browser as a local file).  
 Type a movie review and click **Compare All Models** to see all four architectures classify it side by side.
@@ -60,27 +57,24 @@ Type a movie review and click **Compare All Models** to see all four architectur
 ## ✨ Features
 
 - **4 architectures compared side-by-side** — submit one review and instantly see how RNN, GRU, MLP, and Attention MLP each respond, with confidence scores and inference speed
-- **Swappable model registry** — new architectures self-register with a single decorator; the training loop needs no changes
+- **Swappable models in traning** — architecture with a single decorator; the training loop needs no changes
 - **Frozen GloVe embeddings** — 100-dimensional pre-trained vectors from Stanford, frozen during training for faster convergence and lower memory
-- **Clean modular structure** — data pipeline, models, training, and CLI are fully decoupled
-- **Property-based tests** — correctness properties verified with `hypothesis`
-
 ---
 
-## 🧠 Architectures
+## 🧠 Nodel Architectures & Types
 
 | Model | Description | Test Accuracy |
 |---|---|---|
-| **GRU** | Gated Recurrent Unit — processes the review word-by-word, gating what to remember | ~86% |
-| **RNN** | Vanilla recurrent network — simpler than GRU, faster but less accurate | ~82% |
-| **MLP** | Token-wise multi-layer perceptron — scores each word independently then averages | ~85% |
-| **MLP + Attention** | MLP with restricted self-attention — each word also looks at its neighbours | ~85% |
+| **GRU** | Gated Recurrent Unit — processes the review word-by-word, gating what to remember |
+| **RNN** | Vanilla recurrent network — simpler than GRU, faster but less accurate |
+| **MLP** | Token-wise multi-layer perceptron — scores each word independently then averages |
+| **MLP + Attention** | MLP with restricted self-attention — each word also looks at its neighbours |
 
 All models are trained on 40,000 IMDB reviews (80/20 train/test split) with `BCEWithLogitsLoss` and Adam optimizer.
 
 ---
 
-## 📐 Architecture
+## Architecture
 
 ```
 text_sentiment_classifier/
@@ -124,7 +118,7 @@ graph TD
 ```
 ---
 
-## 🔁 Retrain from Scratch (optional)
+## Retrain from Scratch (optional)
 
 If you want to retrain the models yourself, you also need the dataset:
 
@@ -144,7 +138,7 @@ Checkpoints are saved automatically to `checkpoints/` whenever a new best accura
 
 ---
 
-## 📦 Dependencies
+##  Dependencies
 
 ```
 torch>=2.0.0
