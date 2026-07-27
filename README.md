@@ -1,15 +1,11 @@
 # 🎬 Text Sentiment Classifier
 
 A modular binary sentiment classifier that labels IMDB movie reviews as **positive** or **negative**.  
-Supports four swappable neural architectures — RNN, GRU, MLP, and MLP with restricted self-attention — all behind a shared interface with a live browser demo.
-
-[![Python](https://img.shields.io/badge/python-3.9+-blue.svg)]()
-[![PyTorch](https://img.shields.io/badge/pytorch-2.0+-red.svg)]()
-[![Accuracy](https://img.shields.io/badge/accuracy-86%25-green.svg)]()
+Supports 4 neural architectures: RNN, GRU, MLP, and MLP with restricted self-attention (all behind a shared interface with a live demo.)
 
 ---
 
-## 🖥️ Live Demo (quickest way to try it)
+## Demo (quickest way to try it)
 
 The trained model weights are included in this repo (`checkpoints/`), so you can run the interactive demo **without retraining**.  
 You only need to download one external file: the GloVe word embeddings.
@@ -63,7 +59,7 @@ Type a movie review and click **Compare All Models** to see all four architectur
 
 ## ✨ Features
 
-- **Four architectures compared side-by-side** — submit one review and instantly see how RNN, GRU, MLP, and Attention MLP each respond, with confidence scores and inference speed
+- **4 architectures compared side-by-side** — submit one review and instantly see how RNN, GRU, MLP, and Attention MLP each respond, with confidence scores and inference speed
 - **Swappable model registry** — new architectures self-register with a single decorator; the training loop needs no changes
 - **Frozen GloVe embeddings** — 100-dimensional pre-trained vectors from Stanford, frozen during training for faster convergence and lower memory
 - **Clean modular structure** — data pipeline, models, training, and CLI are fully decoupled
@@ -129,14 +125,6 @@ python train.py --csv_path "IMDB Dataset.csv" --glove_path glove.6B.100d.txt --m
 ```
 
 Checkpoints are saved automatically to `checkpoints/` whenever a new best accuracy is reached.
-
----
-
-## 🔬 Running Tests
-
-```bash
-python -m pytest tests/ -v
-```
 
 ---
 
